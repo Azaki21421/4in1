@@ -27,6 +27,7 @@ This repository contains an implementation of the classic **Connect Four** game 
 
 ## Example Gameplay
 
+```
 Main menu:
 1. New Game
 2. Load Game
@@ -36,7 +37,6 @@ Choose an option: 1
 Enter Player 1 name: Alice
 Enter Player 2 name: Bob
 
-```
 |   |   |   |   |   |   |   |
 |   |   |   |   |   |   |   |
 |   |   |   |   |   |   |   |
@@ -44,5 +44,6 @@ Enter Player 2 name: Bob
 |   |   |   |   |   |   |   |
 |   |   |   |   |   |   |   |
   1   2   3   4   5   6   7
-```
+
 Player Alice (X), enter column (1-7, 0 to save, or -1 to return to menu): 4
+```
