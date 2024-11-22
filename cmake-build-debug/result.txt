@@ -1,0 +1,36 @@
+1,a,b,7,6,4,33
+       
+       
+       
+       
+   OX  
+XOXXOXO
+2,A,B,10,10,6,82
+          
+          
+          
+          
+          
+    O     
+    O     
+ X  XX    
+OXX XO    
+OXOXOOOX  
+3,A,B,7,6,4,30
+       
+       
+     X 
+     O 
+ X X O 
+OOOXOXX
+4,H,B,10,10,6,93
+          
+          
+          
+          
+          
+          
+          
+A         
+A  B      
+AA BB     

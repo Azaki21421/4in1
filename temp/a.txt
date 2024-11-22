@@ -1,0 +1,293 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+
+#define WIDTH 7
+#define HEIGHT 6
+#define EMPTY ' '
+#define PLAYER1 'X'
+#define PLAYER2 'O'
+#define WIN_COUNT 4
+
+char board[HEIGHT][WIDTH];
+char player1[50];
+char player2[50];
+int moves;
+
+void initializeBoard() {
+    for (int i = 0; i < HEIGHT; i++) {
+        for (int j = 0; j < WIDTH; j++) {
+            board[i][j] = EMPTY;
+        }
+    }
+    moves = WIDTH * HEIGHT;
+}
+
+void printBoard() {
+    printf("\n");
+    for (int i = 0; i < HEIGHT; i++) {
+        for (int j = 0; j < WIDTH; j++) {
+            printf("| %c ", board[i][j]);
+        }
+        printf("|\n");
+    }
+    for (int j = 1; j <= WIDTH; j++) {
+        printf("  %d ", j);
+    }
+    printf("\n");
+}
+
+int isFullColumn(int col) {
+    return board[0][col] != EMPTY;
+}
+
+int placeSymbol(int col, char symbol) {  // inp check
+    if (col < 0 || col >= WIDTH || isFullColumn(col)) {
+        printf("Invalid move. Choose a different column.\n");
+        return 0;
+    }
+    for (int i = HEIGHT - 1; i >= 0; i--) {
+        if (board[i][col] == EMPTY) {
+            board[i][col] = symbol;
+            moves--;
+            return 1;
+        }
+    }
+    return 0;
+}
+
+int checkWin(char symbol) {
+    // go through matrix
+    for (int row = 0; row < HEIGHT; row++) {
+        for (int col = 0; col < WIDTH; col++) {
+            if (board[row][col] == symbol) {
+                if (col <= WIDTH - WIN_COUNT &&  // check hor line
+                    board[row][col+1] == symbol &&
+                    board[row][col+2] == symbol &&
+                    board[row][col+3] == symbol) return 1;
+
+                if (row <= HEIGHT - WIN_COUNT) {  // check ver line
+                    if (board[row+1][col] == symbol &&
+                        board[row+2][col] == symbol &&
+                        board[row+3][col] == symbol) return 1;
+                    if (col <= WIDTH - WIN_COUNT &&  // check diag line (right-down)
+                        board[row+1][col+1] == symbol &&
+                        board[row+2][col+2] == symbol &&
+                        board[row+3][col+3] == symbol) return 1;
+                    if (col >= WIN_COUNT - 1 &&  // check diag line (left-down)
+                        board[row+1][col-1] == symbol &&
+                        board[row+2][col-2] == symbol &&
+                        board[row+3][col-3] == symbol) return 1;
+                }
+            }
+        }
+    }
+    return 0;
+}
+
+int getNextGameId() {
+    FILE *file = fopen("result.txt", "r");
+    if (!file) {
+        return 1;
+    }
+
+    int id, maxId = 0;
+    char line[200];
+    while (fgets(line, sizeof(line), file)) {  // read file
+        sscanf(line, "%d,", &id);  // get id
+        if (id > maxId) {
+            maxId = id;
+        }
+    }
+    fclose(file);
+    return maxId + 1;
+}
+
+void saveGame(int id) {
+    FILE *file = fopen("result.txt", "a");
+    if (!file) {
+        printf("Error saving game.\n");
+        return;
+    }
+    fprintf(file, "%d,%s,%s,%d\n", id, player1, player2, moves);  // to file
+    for (int i = 0; i < HEIGHT; i++) {
+        for (int j = 0; j < WIDTH; j++) {
+            fputc(board[i][j], file);
+        }
+        fputc('\n', file);
+    }
+    fclose(file);
+    printf("Game saved with ID %d.\n", id);
+}
+
+int loadGame(int id) {
+    FILE *file = fopen("result.txt", "r");
+    if (!file) {
+        printf("Error loading game.\n");
+        return 0;
+    }
+
+    int foundId;
+    char line[200];
+    while (fgets(line, sizeof(line), file)) {
+        if (sscanf(line, "%d,%[^,],%[^,],%d", &foundId, player1, player2, &moves) == 4) {  // from file
+            if (foundId == id) {
+                for (int i = 0; i < HEIGHT; i++) {
+                    fgets(line, sizeof(line), file);
+                    for (int j = 0; j < WIDTH; j++) {
+                        board[i][j] = line[j];
+                    }
+                }
+                fclose(file);
+                return 1;
+            }
+        }
+    }
+    fclose(file);
+    printf("Game with ID %d not found.\n", id);
+    return 0;
+}
+
+void startGame() {
+    char currentSymbol = PLAYER1;
+    while (1) {
+        printBoard();
+        printf("Player %s (%c), enter column (1-%d, 0 to save, or -1 to return to menu): ",
+               currentSymbol == PLAYER1 ? player1 : player2, currentSymbol, WIDTH);
+        char input[10];
+        scanf("%s", input);
+
+        if (strlen(input) != 1 || (!isdigit(input[0]) && input[0] != '-' && input[0] != '0')) {
+            printf("Invalid input. Please enter a number.\n");
+            continue;
+        }
+
+        int col = atoi(input);
+        if (col == 0) {
+            int saveId = getNextGameId();
+            saveGame(saveId);
+            continue;
+        } else if (col == -1) {
+            return;  // Exit to menu
+        } else if (col < 1 || col > WIDTH) {
+            printf("Invalid column. Choose a number between 1 and %d.\n", WIDTH);
+            continue;
+        }
+
+        if (placeSymbol(col - 1, currentSymbol)) {
+            if (checkWin(currentSymbol)) {
+                printBoard();
+                printf("Congratulations, %s (%c) wins!\n",
+                       currentSymbol == PLAYER1 ? player1 : player2, currentSymbol);
+                break;
+            }
+            if (moves == 0) {
+                printf("Draw! The board is full.\n");
+                break;
+            }
+            currentSymbol = (currentSymbol == PLAYER1) ? PLAYER2 : PLAYER1;
+        }
+    }
+}
+
+void Setting(int sets) {
+    if (sets == 1) {
+        printf("Enter new board width (minimum 4): ");
+        scanf("%d", &WIDTH);
+        if (WIDTH < 4) {
+            printf("Width too small. Resetting to default (7).\n");
+            WIDTH = 7;
+        }
+    } else if (sets == 2) {
+        printf("Enter new board height (minimum 4): ");
+        scanf("%d", &HEIGHT);
+        if (HEIGHT < 4) {
+            printf("Height too small. Resetting to default (6).\n");
+            HEIGHT = 6;
+        }
+    } else if (sets == 3) {
+        printf("Enter new symbol for Player X: ");
+        char newSymbol;
+        scanf(" %c", &newSymbol);
+        if (!isalnum(newSymbol) || newSymbol == PLAYER2 || newSymbol == EMPTY) {
+            printf("Invalid symbol. Resetting to default (X).\n");
+            PLAYER1 = 'X';
+        } else {
+            PLAYER1 = newSymbol;
+        }
+
+        printf("Enter new symbol for Player O: ");
+        scanf(" %c", &newSymbol);
+        if (!isalnum(newSymbol) || newSymbol == PLAYER1 || newSymbol == EMPTY) {
+            printf("Invalid symbol. Resetting to default (O).\n");
+            PLAYER2 = 'O';
+        } else {
+            PLAYER2 = newSymbol;
+        }
+    } else if (sets == 4) {
+        printf("Enter new win condition (minimum 4): ");
+        scanf("%d", &WIN_COUNT);
+        if (WIN_COUNT < 4) {
+            printf("Win condition too small. Resetting to default (4).\n");
+            WIN_COUNT = 4;
+        }
+    } else if (sets == 5) {
+        return;  // Exit settings
+    } else {
+        printf("Invalid option.\n");
+    }
+    initializeBoard();  // Reinitialize board with updated settings
+}
+
+void mainMenu() {
+    while (1) {
+        printf("Main menu:\n1.) New Game\n2.) Load Game\n3.) Setting\n4.) Exit\nChoose an option: ");
+        char choice[10];
+        scanf("%s", choice);
+
+        // check inp
+        if (strlen(choice) != 1 || !isdigit(choice[0])) {
+            printf("Invalid input. Please enter 1, 2, 3, or 4.\n");
+            continue;
+        }
+
+        if (choice[0] == '1') {
+            printf("Enter player X name: ");
+            scanf("%s", player1);
+            printf("Enter player O name: ");
+            scanf("%s", player2);
+            initializeBoard();
+            startGame();
+        } else if (choice[0] == '2') {
+            int id;
+            printf("Enter ID to load: ");
+            scanf("%d", &id);
+            if (loadGame(id)) {
+                startGame();
+            }
+        } else if (choice[0] == '3') {
+            int sets;
+            printf("Setting\n");
+            printf("1. Change width of board\n");
+            printf("2. Change height of board\n");
+            printf("3. Change place symbol of board\n");
+            printf("4. Change amount of symbols for win\n");
+            printf("5. Exit\n");
+            printf("Choose an option: ");
+            scanf("%d", &sets);
+            Setting(sets);
+        } else if (choice[0] == '4') {
+            printf("Exiting the game.\n");
+            return;
+        } else {
+            printf("Invalid choice.\n");
+        }
+    }
+}
+
+int main() {
+    // start
+    mainMenu();
+    return 0;
+}
